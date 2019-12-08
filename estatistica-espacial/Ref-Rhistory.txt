@@ -1,0 +1,226 @@
+#Carregando o pacote rgdal, maptools e dplyr
+library(rgdal)
+library(maptools)
+library(dplyr)
+#Importando o shapefile de Nova York
+NYShp <- readOGR("nyshape.shp")
+#Carregando o pacote readr
+library(readr)
+#Importando o arquivo com as localizações dos delitos em NY
+NYPD = read_csv2("NYPD16jan.csv")
+#Carregando o pacote spatstat
+library(spatstat)
+#Definindo o shapefile como uma janela onde os pontos serao plotados - necessario para o uso do pacote spatstat
+NYO <- as.owin(NYShp)
+#Plotando o shapefile
+plot(NYO)
+#Criando o padrao de pontos a ser plotado
+NYppp = ppp(NYPD$Longitude, NYPD$Latitude, window=NYO)
+#Plotando as localizacoes dos delitos
+par(mar=c(0.5,0.5,1.5,0.5))
+plot(NYppp, pch=21, cex=0.9, bg="blue", main="Ocorrencias de crimes em Nova York")
+#Estimando o efeito de primeira ordem (intensidade) usando diferentes kernels
+NYkde.q = density.ppp(x = NYppp, sigma=0.01, kernel="quartic")
+NYkde.g = density.ppp(x = NYppp, sigma=0.01, kernel="gaussian")
+NYkde.e = density.ppp(x = NYppp, sigma=0.01, kernel="epanechnikov")
+#Plotando os dados e as funcoes intensidades estimadas pelas diversas funcoes kernel
+par(mfrow=c(2,2))
+plot(NYppp, pch=21, cex=0.9, bg="blue", main="Ocorrencias", cex.main=0.5)
+plot(NYkde.q, main="Kernel Quartico", cex.main=0.5)
+plot(NYkde.g, main="Kernel Normal")
+plot(NYkde.e, main="Kernel Epanechnikov")
+par(mfrow=c(1,1))
+#Avaliando o impacto de diferentes raios (tau)
+par(mfrow=c(3,2))
+plot(NYppp, pch=21, cex=0.9, bg="blue", main="Ocorrencias", cex.main=0.5)
+plot(density.ppp(NYppp, sigma=0.005, kernel="gaussian"), main="Sigma=0.005", cex.main=0.5)
+plot(density.ppp(NYppp, sigma=0.01, kernel="gaussian"), main="Sigma=0.01", cex.main=0.5)
+plot(density.ppp(NYppp, sigma=0.02, kernel="gaussian"), main="Sigma=0.02", cex.main=0.5)
+plot(density.ppp(NYppp, sigma=0.05, kernel="gaussian"), main="Sigma=0.05", cex.main=0.5)
+plot(density.ppp(NYppp, sigma=0.5, kernel="gaussian"), main="Sigma=0.5", cex.main=0.5)
+par(mfrow=c(1,1))
+#Carregando o pacote ggmap
+library(ggmap)
+#Plotando o grafico com recursos do Google Maps
+nyhyb = get_googlemap('New York City',zoom=10,maptype='hybrid')
+ggmap(nyhyb)
+#Criando o grafico com a densidade e o layout do Google Maps
+google = ggmap(nyhyb) + stat_density2d(aes(x=Longitude,y=Latitude, fill = ..level..), alpha = .8, h=.025, n = 400,geom = "polygon", data = NYPD)
+plot(google)
+#Fazendo o plot da densidade considerando os diferentes tipos de crime
+google + scale_fill_gradient(low = "black", high= "red") + facet_wrap(~ TYPE)
+#Sorteando uma amostra de tamanho 100 para estudar o efeito de segunda ordem por conta do custo computacional
+aNY = sample_n(NYPD,100)
+aNYppp = ppp(aNY$Longitude, aNY$Latitude, window=NYO)
+plot(aNYppp, pch=21, cex=0.9, bg="blue", main="Amostra")
+#Estimando a funcao G
+NY.G = Gest(aNYppp)
+#Estimando a funcao K
+NY.K = Kest(aNYppp)
+#Estimando a funcao F
+NY.F = Fest(aNYppp)
+#Plotando as funcoes G, K e F
+par(mfrow = c(2,2))
+par(mar=c(2.5,2.5,1.5,.5))
+plot(NY.G, main="Funcao G")
+plot(NY.K, main="Funcao K")
+plot(NY.F, main="Funcao F")
+par(mfrow = c(1,1))
+#Realizando o teste de Clark-Evans para verificar agregacao espacial
+clarkevans.test(aNYppp)
+#Realizando o teste de Hopkins-Skellam de Completa aleatoriedade espacial para verificar agregacao espacial
+hopskel.test(aNYppp, alternative="clustered")
+#Funcoes para estimar os envelopes das funcoes F, G e K
+#Kest=envelope(aNYppp,Kest,nsim=10) #alto custo computacional
+Gest=envelope(aNYppp,fun = Gest,nsim=10)
+Fest=envelope(aNYppp,fun = Fest,nsim=10)
+#Plotando as funcoes e seus respectivos envelopes
+par(mfrow=c(2,2))
+plot(aNYppp, pch=21, cex=0.9, bg="blue")
+#plot(aKest)
+plot(Gest)
+plot(Fest)
+par(mfrow=c(1,1))
+dados=read.table("C:\\Users\\Jony\\Documents\\Universidade Federal Fluminense\\Disciplinas\\2012_1\\GET00128 - Estatistica Aplicada\\Avaliacao 01\\Gabarito\\Banco.txt",h=T)
+dados=read.table("Banco.txt",h=T)
+getwd()
+setwd("/Users/jony/Documents/Universidade Federal Fluminense/Disciplinas/2014_2/GET00128 - Estatistica Aplicada/Avaliacao 01/Gabarito")
+dados=read.table("Banco.txt",h=T)
+ks.test(Banco$antes[1:30], "pnorm", mean(antes[1:30]), sd(antes[1:30]))
+ks.test(dados$antes[1:30], "pnorm", mean(antes[1:30]), sd(antes[1:30]))
+View(dados)
+library(dplyr)
+?sample_n
+base = dados[sample_n(base),]
+sample_n(dados)
+base = dados[sample_n(dados,60),]
+dados
+sample_n(1:60,60)
+sample(1:60,60)
+base = dados[sample(1:60,60),]
+base
+dados
+base = dados[sample(1:57,57),]
+base
+setwd("/Users/jony/Documents/Universidade Federal Fluminense/LES/Prova selecao de monitores")
+write_csv(base,"Infarto.csv")
+setwd("/Users/jony/Documents/Universidade Federal Fluminense/Disciplinas/2014_2/GET00128 - Estatistica Aplicada/Avaliacao 01/Gabarito")
+library(readr)
+library(haven)
+dados = read_sav("Banco questao 01.sav")
+View(dados)
+dados = read_sav("Banco.sav")
+View(dados)
+setwd("/Users/jony/Documents/Universidade Federal Fluminense/LES/Prova selecao de monitores")
+dados = read_csv("Infarto.csv")
+dados
+library(readr)
+?chisq.test
+chisq.test(table(dados$infarto,dados$pressao))
+prop.table(table(dados$infarto,dados$pressao),2)
+prop.table(table(dados$infarto,dados$pressao),2)*100
+prop.table(table(dados$pressao,dados$infarto),2)*100
+dados$infarto = factor(dados$infarto,c("Não","Sim"))
+dados
+dados = read_csv("Infarto.csv")
+dados
+factor
+?factor
+dados$infarto = factor(dados$infarto,labels = c("Não","Sim"))
+dados
+prop.table(table(dados$pressao,dados$infarto),2)*100
+sub = dados %>% filter(infarto == "Sim")
+ks.test(dados$depois,mean(dados$depois),sd(dados$depois))
+sub$depois
+ks.test(sub$depois,mean(sub$depois),sd(sub$depois))
+ks.test(sub$antes,mean(sub$antes),sd(sub$antes))
+View(dados)
+View(dados)
+sub2 = dados %>% filter(grauparentesco == 0)
+ks.test(sub2$peso,mean(sub2$peso),sd(sub2$peso))
+sub3 = dados %>% filter(grauparentesco == 1)
+sub4 = dados %>% filter(grauparentesco == 2)
+ks.test(sub2$peso,mean(sub2$peso),sd(sub2$peso))
+ks.test(sub3$peso,mean(sub3$peso),sd(sub3$peso))
+ks.test(sub4$peso,mean(sub4$peso),sd(sub4$peso))
+?var.test
+bartlett.test(dados$peso,factor(dados$grauparentesco))
+anova = aov(peso ~ factor(graupatrentesco), data = dados)
+anova = aov(peso ~ factor(grauparentesco), data = dados)
+summary(anova)
+dados
+summary(dados)
+dados %>% group_by(grauparentesco) %>% summarise(media = mean(peso, na.rm = TRUE))
+library(dplyr)
+library(readr)
+setwd("/Users/jony/Documents/Universidade Federal Fluminense/LES/Prova selecao de monitores")
+dados = read_csv("Infarto.csv")
+dados$infarto = factor(dados$infarto,labels = c("Não","Sim"))
+dados$pressao = factor(dados$pressao,labels = c("Normal","Alta"))
+dados$satisfacao = factor(dados$satisfacao,labels = c("Insatisfeito","Indiferente","Satisfeito"))
+dados
+sub = dados %>% filter(infarto == "Sim")
+ks.test(sub$antes,mean(sub$antes),sd(sub$antes))
+ks.test(sub$depois,mean(sub$depois),sd(sub$depois))
+qqnorm(sub$antes)
+qqline(sub$antes)
+par(mfrow=c(1,2))
+qqnorm(sub$antes)
+qqline(sub$antes)
+qqnorm(sub$depois)
+qqline(sub$depois)
+par(mfrow=c(1,1))
+?t.test
+t.test(sub$depois,sub$antes,paired = TRUE, alternative = "greater")
+t.test(sub$depois,sub$antes,paired = TRUE, alternative = "less")
+prop.table(table(dados$pressao,dados$infarto),2)*100
+round(prop.table(table(dados$pressao,dados$infarto),2)*100,2)
+tabela = round(prop.table(table(dados$pressao,dados$infarto),2)*100,2)
+barplot(tabela)
+chisq.test(table(dados$infarto,dados$pressao),correct = FALSE)
+sub2 = dados %>% filter(satisfacao == "Insatisfeito")
+sub3 = dados %>% filter(satisfacao == "Indiferente")
+sub4 = dados %>% filter(satisfacao == "Satifeito")
+ks.test(sub2$depressao,mean(sub2$depressao),sd(sub2$depressao))
+ks.test(sub3$depressao,mean(sub3$depressao),sd(sub3$depressao))
+ks.test(sub4$depressao,mean(sub4$depressao),sd(sub4$depressao))
+sub4
+sub4 = dados %>% filter(satisfacao == "Satisfeito")
+ks.test(sub4$depressao,mean(sub4$depressao),sd(sub4$depressao))
+par(mfrow=c(1,2))
+qqnorm(sub2$depressao)
+qqline(sub2$depressao)
+qqnorm(sub3$depressao)
+qqline(sub3$depressao)
+qqnorm(sub4$depressao)
+qqline(sub4$depressao)
+par(mfrow=c(1,1))
+par(mfrow=c(1,3))
+qqnorm(sub2$depressao)
+qqline(sub2$depressao)
+qqnorm(sub3$depressao)
+qqline(sub3$depressao)
+qqnorm(sub4$depressao)
+qqline(sub4$depressao)
+par(mfrow=c(1,1))
+bartlett.test(dados$peso,factor(dados$grauparentesco))
+bartlett.test(dados$depressao,dados$satisfacao))
+bartlett.test(dados$depressao,dados$satisfacao)
+anova = aov(depressao ~ satisfacao, data = dados)
+summary(anova)
+dados %>% group_by(satisfacao) %>% summarise(media = mean(depressao, na.rm = TRUE), desvio = sd(depressao, na.rm = TRUE), n = n())
+boxplot(depressao ~ satisfacao, data = dados)
+str(crime)
+View(str(crime))
+View(crime)
+dim(crime)
+setwd("/Users/jony/Downloads/City")
+library(rgdal)
+houston = readOGR("City.shp")
+plot(houston)
+HH = ppp(crime$lon, crime$lat, houston)
+H = as.owin(houston)
+HH = ppp(crime$lon, crime$lat, H)
+dim(crime)
+plot(HH)
+setwd("/Users/jony/Downloads/Houston_City_Limit")
