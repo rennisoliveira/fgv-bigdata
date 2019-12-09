@@ -1,6 +1,6 @@
-# Trabalho 1
-#Dados – Localizações das ocorrências de crimes na cidade de Houston.
-
+# Trabalho - Descrição
+if(1=2) {
+# Dados – Localizações das ocorrências de crimes na cidade de Houston.
 # Gostaria que vocês me entregassem um relatório com a análise de vocês e o script do R 
 # (o mais comentado possível, indicando o que estão fazendo com cada comando, com suas 
 # próprias palavras). O relatório de vocês deve apresentar discussões 
@@ -20,15 +20,21 @@
 # ou os padrões tendem a ser diferentes?
 
 # Mapa com a localização de Pontos do evento de crimes em Houston
+}
 
+# Setando o diretorio de trabalho
+setwd("/home/rennis/rennisHD00/Projetos/Pessoal/R/rennis-fgv-bigdata/estatistica-espacial/trabalho")
 
 # Importando os pacotes
 if(!require("rgdal")) install.packages("rgdal")
 if(!require("maptools")) install.packages("maptools")  
 if(!require("dplyr")) install.packages("dplyr")
 if(!require("spatstat")) install.packages("spatstat")
-if(!require("ggmap")) install.packages("ggmap")  
+if(!require("ggmap")) install.packages("ggmap") 
 if(!require("gridExtra")) install.packages("gridExtra")  
+
+## Especifico para maquinas Linux
+if(!exists(".sp2owin", mode="function")) source("../../utils/sp2owin.R")
 
 library(rgdal)
 library(maptools)
@@ -37,11 +43,9 @@ library(spatstat)
 library(sp)
 library(ggmap)
 
-# Setando o diretorio de trabalho
-setwd("/home/rennis/rennisHD00/Projetos/Pessoal/R/rennis-fgv-bigdata/estatistica-espacial")
 crimes <- read.csv("dataset/Base Houston.csv")
 
-# conhecendo as características dos dados
+# Conhecendo as características dos dados
 summary(crimes)
 summary(crimes$offense)
 summary(crimes$day)
@@ -53,11 +57,14 @@ HoustonShp <- readOGR("map/Houston_City_Limit.shp")
 # Observando qual o tipo de coordenadas através da visualização do eixo
 plot(HoustonShp, axes=TRUE)
 
-# preparando o shape para ser utilizado pela biblioteca spatstat
-Houston <- as.owin(HoustonShp)
+# Preparando o shape para ser utilizado pela biblioteca spatstat
+## Houston <- as.owin(HoustonShp) # Windows
+Houston <- .sp2owin(HoustonShp)
+
+# Plotando Objeto
 plot(Houston, axes = TRUE)
 
-#criando um padr?o de pontos a ser plotado
+# Criando um padrao de pontos a ser plotado
 Houstonppp = ppp(crimes$lon, crimes$lat, window=Houston)
 plot(Houstonppp, axes=TRUE)
 
