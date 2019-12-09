@@ -25,6 +25,9 @@ if(1=2) {
 # Setando o diretorio de trabalho
 setwd("/home/rennis/rennisHD00/Projetos/Pessoal/R/rennis-fgv-bigdata/estatistica-espacial/trabalho")
 
+## Especifico para maquinas Linux
+if(!exists(".sp2owin", mode="function")) source("../../utils/sp2owin.R")
+
 # Importando os pacotes
 if(!require("rgdal")) install.packages("rgdal")
 if(!require("maptools")) install.packages("maptools")  
@@ -33,8 +36,6 @@ if(!require("spatstat")) install.packages("spatstat")
 if(!require("ggmap")) install.packages("ggmap") 
 if(!require("gridExtra")) install.packages("gridExtra")  
 
-## Especifico para maquinas Linux
-if(!exists(".sp2owin", mode="function")) source("../../utils/sp2owin.R")
 
 library(rgdal)
 library(maptools)
