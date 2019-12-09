@@ -44,7 +44,7 @@ library(sp)
 library(ggmap)
 
 crimes <- read.csv("dataset/Base Houston.csv")
-
+    
 # Conhecendo as características dos dados
 summary(crimes)
 summary(crimes$offense)
