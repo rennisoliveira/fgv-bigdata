@@ -6,7 +6,7 @@
 setwd("/home/rennis/rennisHD00/Projetos/Pessoal/R/rennis-fgv-bigdata/estatistica-espacial")
 
 ## Especifico para maquinas Linux
-if(!exists(".sp2owin", mode="function")) source("../utils/sp2owin.R")
+# if(!exists(".sp2owin", mode="function")) source("../utils/sp2owin.R")
 
 #Carregando o pacote rgdal
 library(rgdal)
@@ -20,8 +20,8 @@ plot(recife, axes = TRUE)
 #Transformando para latitude e longitude
 
 # Linux nao pode fazer - Trava Cartogram
-recife2 = spTransform(x = recife, CRSobj = CRS("+proj=longlat +datum=WGS84"))
-plot(recife2, axes = TRUE)
+## recife2 = spTransform(x = recife, CRSobj = CRS("+proj=longlat +datum=WGS84"))
+## plot(recife2, axes = TRUE)
 
 
 ## spTransform - transformacao de dados e projecao de mapas
