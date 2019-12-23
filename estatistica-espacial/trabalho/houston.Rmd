@@ -1,0 +1,405 @@
+---
+title: "Estatística Espacial"
+# output: github_document
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Trabalho - FGV - MBA Big Data
+
+**Dados – Localizações das ocorrências de crimes na cidade de Houston.**
+
+  Elaboração um relatório com a análise do script do R, com comandos comentados e conclusões sobre os problemas envolvidos no trabalho. 
+
+Definição de Diretorio
+```{r}
+# Setando o diretorio de trabalho
+setwd("/home/rennis/rennisHD00/Projetos/Pessoal/R/rennis-fgv-bigdata/estatistica-espacial/trabalho")
+```
+
+Pacotes Utilizados 
+```{r message=FALSE}
+if(!require("rgdal")) install.packages("rgdal")
+if(!require("maptools")) install.packages("maptools") 
+if(!require("dplyr")) install.packages("dplyr")
+if(!require("spatstat")) install.packages("spatstat")
+if(!require("ggmap")) install.packages("ggmap")  
+if(!require("leaflet")) install.packages("leaflet")
+if(!require("leaflet.extras")) install.packages("leaflet.extras")  
+if(!require("ggplot2")) install.packages("ggplot2")  
+if(!require("lubridate")) install.packages("lubridate")  
+
+library(rgdal)
+library(maptools)
+library(dplyr)
+library(spatstat)
+library(sp)
+library(ggmap)
+library(ggplot2)
+library(lubridate)
+library(leaflet)
+library(leaflet.extras)
+library(gridExtra)
+```
+
+Leitura da BAse de Dados de Crimes Disponibilizada
+```{r}
+crimes <- read.csv("../dataset/Base Houston.csv")
+```
+
+Avaliando as características gerais dos dados
+```{r}
+summary(crimes)
+summary(crimes$offense)
+summary(crimes$day)
+summary(crimes$hour)
+```
+
+Importação do shapefile de Houston
+```{r}
+HoustonShp <- readOGR("../map/Houston_City_Limit/Houston_City_Limit.shp")
+```
+
+Identificando o tipo de coordenadas através da visualização do eixo
+```{r}
+plot(HoustonShp, axes=TRUE)
+```
+
+Verificando dimensionalidade
+```{r}
+dim(crime)
+```
+
+Preparando o shape para ser utilizado pela biblioteca spatstat
+Devido a caracteristicas da biblioteca, e necessario customização para funcionar no Linux
+** Houston <- as.owin(HoustonShp) # Windows **
+** Houston <- .sp2owin(HoustonShp) # Linux **
+```{r}
+# Customização para Linux
+if(!exists(".sp2owin", mode="function")) source("../../utils/sp2owin.R")
+Houston <- .sp2owin(HoustonShp)
+```
+
+Plotando 
+```{r}
+plot(Houston, axes = TRUE)
+```
+
+Criação de um padrão de pontos a ser plotado
+```{r}
+Houstonppp = ppp(crimes$lon, crimes$lat, window=Houston)
+plot(Houstonppp, axes=TRUE)
+```
+
+** Estimação da funcao G ** 
+Gest - estima a funcao de distribuicao G de um padrao de pontos
+```{r}
+Houston.G <- Gest(Houstonppp) 
+Houston.G
+```
+
+** Estimando a funcao K **
+Kest - estima a funcao K de Ripley de um padrao de pontos
+```{r}
+# Houston.K <- Kest(Houstonppp)
+# Houston.K
+```
+
+** Estimando a funcao F ** 
+```{r}
+Houston.F <- Fest(Houstonppp)
+Houston.F
+```
+
+Plotando as funcoes G, K e F
+```{r}
+par(mfrow = c(1,2))
+par(mar=c(2.5,2.5,1.5,.5))
+plot(Houston.G, cbind(km, theo) ~ theo, main="Funcao G")
+# plot(Houston.K, cbind(iso, theo) ~ theo, main="Funcao K")
+```
+
+Analise F curva abaixo da teórica será um indicavo de agrupamento (inverso da G e K)
+```{r}
+plot(Houston.F, cbind(km, theo) ~ theo, main="Funcao F")
+par(mfrow = c(1,1))
+```
+
+## Densidade
+```{r}
+HoustonDE.q = density.ppp(x = Houstonppp, sigma=0.01, kernel="quartic")
+HoustonDE.q
+HoustonDE.g = density.ppp(x = Houstonppp, sigma=0.01, kernel="gaussian")
+HoustonDE.g
+HoustonDE.e = density.ppp(x = Houstonppp, sigma=0.01, kernel="epanechnikov")
+HoustonDE.e
+
+```
+
+Verificando se e razoavel assumir CSR
+
+**Dividindo o espaco em regioes e contando a quantidade de ocorrencias**
+quadratcount - dividi uma janela em retangulos e conta o numero de pontos em cada um deles
+Argumentos:
+*X - objeto do tipo ppp
+*nx - numero de particoes no eixo x
+*nx - numero de particoes no eixo y
+```{r}
+cont = quadratcount(X = Houstonppp, nx = 2, ny = 3)
+```
+
+Visualizando as contagens em cada celula
+```{r}
+cont
+par(mfrow=c(1,2))
+par(mar=c(0.5,0.5,1.5,1))
+plot(Houstonppp, pch=21, cex=0.5, bg="green")
+plot(cont)
+par(mfrow=c(1,1))
+
+```
+
+Testando aleatoriedade espacial completa (H1: padrao nao apresenta CSR) 
+# p-value < 2.2e-16
+```{r}
+teste = quadrat.test(X = Houstonppp, nx = 2, ny = 3);
+teste
+```
+
+Testando aleatoriedade espacial completa (H1: padrao de pontos apresenta agrupamento)
+```{r}
+teste_agrupamento = quadrat.test(X = Houstonppp, nx = 2, ny = 3, alternative = "clustered"); 
+teste_agrupamento
+
+```
+
+Testando aleatoriedade espacial completa (H1: padrao de pontos apresenta regularidade)
+```{r}
+teste_regularidade = quadrat.test(X = Houstonppp, nx = 2, ny = 3, alternative = "regular"); 
+teste_regularidade
+```
+
+Realizando o teste de Clark-Evans para verificar nao aleatoriedade espacial completa
+```{r}
+clarkevans.test(Houstonppp)
+```
+
+Realizando o teste de Clark-Evans para verificar agregacao espacial
+```{r}
+clarkevans.test(Houstonppp, alternative = "less")
+```
+
+Realizando o teste de Clark-Evans para verificar regularidade espacial
+```{r}
+clarkevans.test(Houstonppp, alternative = "greater")
+```
+
+
+Também podemos visualizar os dados no mapa para entender as características do terreno
+```{r}
+qmplot(x = lon, y = lat, data = crimes,
+       colour = I('red'), size = I(1.5), darken = .3)
+```
+
+
+Visualizando o mapa com a API do Google Maps
+Definindo a chave da API de acesso ao Google Maps (COMENTAR)
+```{r}
+register_google(key="AIzaSyA6n4J6vbGg1D76ZiNFnhmSeLH8es_p4y8")
+```
+
+Criando objetos para os graficos de Houston com diferentes camadas de layouts
+```{r}
+#Hter = get_googlemap('Houston',zoom=10,maptype='terrain')
+#Hsat = get_googlemap('Houston',zoom=10,maptype='satellite')
+#Hrod = get_googlemap('Houston',zoom=10,maptype='roadmap')
+#Hhib = get_googlemap('Houston',zoom=10,maptype='hybrid')
+
+```
+
+Dividindo a plotagem  dos graficos em uma grade
+```{r}
+#grid.arrange(ggmap(Hter) + ggtitle("Terreno"), 
+             #ggmap(Hsat) + ggtitle("Satelite"),
+             #ggmap(Hrod) + ggtitle("Rodovia"),
+             #ggmap(Hhib) + ggtitle("Hibrido"), ncol=2)
+
+```
+
+Plotando as ocorrencias sobre o mapa do Google Maps com tipo Satelite
+```{r}
+ggmap(Hsat) + geom_point(data=crimes, aes(x=lon,y=lat), col="red", size=1.5, alpha=0.5)
+
+```
+
+Sobrepondo o shape de Houston em cima da vis?o do google maps
+```{r}
+#ggmap(Hsat) + 
+  #geom_polygon(aes(x = long, y = lat, group = group), data = HoustonShp,
+  #             colour ='white ', fill =' black ', alpha = .4, size = .3) +
+  #geom_point(data=crimes, aes(x=lon,y=lat), col="red", size=1.5, alpha=0.5)
+```
+
+Verificando se existe pontos fora do poligono
+```{r}
+m <- leaflet() %>%
+  addTiles() %>%  # OpenStreetMap map tiles
+  # Marker unico
+  # addMarkers(lng=174.768, lat=-36.852, popup="The birthplace of R",icon = anglerIcon,) %>%
+  # Multiplos markers
+  # addMarkers(lng=crimes$lon, lat=crimes$lat) %>%
+  # Tiles especiais do extra
+  addProviderTiles(provider = providers$OpenMapSurfer) %>%
+  # Multiplos tiles com transparencia
+  addProviderTiles(providers$Stamen.TonerLines,
+                   options = providerTileOptions(opacity = 0.35)) %>%
+  addProviderTiles(providers$Stamen.TonerLabels) %>%
+  #addHeatmap(lat = crimes$lat,lng = crimes$lon, intensity = HoustonDE.q) %>%
+  addHeatmap(lat = crimes$lat,lng = crimes$lon,radius = 30,blur = 55) %>%
+  addMiniMap()
+
+```
+
+Exibe o mapa
+
+
+## Investigando os cenarios em dias diferentes
+
+**Inicialmente iremos fazer uma an?lise estatistica descritiva por dia.**
+Para isso inicialmente iremos fazer um histograma simples
+
+Organizando os dias da semana de maneira cronologica
+Definindo a ordem
+```{r}
+dayLabs<-c("monday","tuesday","wednesday","thursday","friday","saturday","sunday") 
+```
+
+Plotando
+```{r}
+crimes %>%  ggplot(aes(x=day,fill=offense)) + geom_bar() + scale_x_discrete(limits=dayLabs) + 
+  labs(title='Grafico de barras Empilhadas de Crimes por dias da semana',
+       y='Numero de crimes', x='Dia da Semana')
+
+```
+
+Foi identificado que o dia da semana mais 'violento' ? o sabado seguido da segunda
+Vamos analisando os crimes e segregando os dias da semana
+```{r}
+crimes %>%  ggplot(aes(x=offense,fill=day)) + geom_bar() +
+  labs(title='Gr?fico de barras Empilhadas de tipos de crimes',
+       y='Numero de ocorr?ncias', x='Tipo de Crime')
+
+```
+
+Os crimes parecem ser distribuidos em todos osdias da semana, aparentemente no sábado há uma maior incid?ncia de assassinatos se comparado aos outros dias da semana
+
+Como vimos no histograma no inicio do exerc?cio os crimes por assalto e roubo tem maior frequencia do que os assaltos vamos agora tentar verificar o padr?o dos assassinatos
+```{r}
+assassinatos <- crimes %>% filter(offense=='murder')
+assassinatos %>%  ggplot(aes(x=day)) + geom_bar() + scale_x_discrete(limits=dayLabs) + 
+  labs(title='Grafico de barras Empilhadas de Crimes por dias da semana',
+       y='Numero de crimes', x='Dia da Semana')
+
+```
+
+Vamos ver esta distribuicao em mapa 
+```{r}
+qmplot(x = lon, y = lat, data = crimes, colour='red', size = I(1.5))+
+  ggtitle('Ocorrencias de crimes por dia da semana')
+
+```
+
+Note que o mapa com todas as vari?veis agrupadas ? pouco intuitivo por isso vamos dividir em diferentes mapas com o uso do facet_wrap
+```{r}
+qmplot(x = lon, y = lat, data = crimes, colour='red') +facet_wrap(~ day,nrow=2)+
+  ggtitle('Ocorr?ncias de crimes por dia da semana')
+
+```
+Os crimes aparentemente s?o distribuidos nos dias da semana enquanto no domingo apresenta um maior grau de agrega??o
+
+Vamos tentar separar os crimes por ofensa :
+```{r}
+qmplot(x = lon, y = lat, data = crimes, colour=offense, size = I(1.5)) +facet_wrap(~ day,nrow=2)+
+  ggtitle('Ocorr?ncias de crimes por dia da semana') +theme(
+    plot.title = element_text(color="red", size=14, face="bold.italic"))
+
+```
+
+```{r}
+qmplot(x = lon, y = lat, data = assassinatos, colour='red',size=I(3)) +facet_wrap(~ day,nrow=2)+
+  ggtitle('Ocorr?ncias de crimes por dia da semana') +theme(
+    plot.title = element_text(color="red", size=14, face="bold.italic"))
+
+```
+
+Note que ha uma prevalencia dos assassinatos na por??o sul da cidade
+Vamos agora verificar a hora do dia em que eles ocorrem 
+```{r}
+qmplot(x = lon, y = lat, data = assassinatos, colour=hour,size=I(3)) +facet_wrap(~ day,nrow=2)+
+  ggtitle('Assassinatos por dia da semana') +theme(
+    plot.title = element_text(color="red", size=14, face="bold.italic"))+
+  scale_color_gradient2(midpoint=12, low="blue", mid="red",high="blue", space ="Lab" )
+
+```
+
+
+Aparentemente os pontos mais escuros (a noite) que ocorrem os assassinatos
+```{r}
+assassinatos %>%  ggplot(aes(x=hour,fill=day)) + geom_bar() + scale_x_discrete(limits=0:23) + 
+  labs(title='Grafico de barras Empilhadas de Assasinatos por dias da semana',
+       y='Numero de assassinatos', x='Horas do dia')
+```
+
+Aqui verificamos que é entre 22:00 e 2:00 que os assassinatos tem maior ocorr?ncia, com destaque para Quinta, Sexta e sábado a noite.
+
+Podemos fazer uma an?lise semelhante para a contagem total de crimes
+```{r}
+crimes %>%  ggplot(aes(x=hour,fill=day)) + geom_bar() + scale_x_discrete(limits=0:23) + 
+  labs(title='Grafico de barras Empilhadas de Crimes por dias da semana',
+       y='Numero de crimes', x='Horas do dia')
+```
+
+Novamente verificamos que é a noite que há uma maior incid?ncia de crimes (entre as 18:00 e as 03:00)
+
+Utilizando as funções espaciais
+Vetor para armazenar os gráficos
+```{r}
+for(days in dayLabs){
+  #criando um padrao de pontos dia da semana
+  crimes_day <- crimes %>% filter(day==days)
+  Houstonppp_day = ppp(crimes_day$lon, crimes_day$lat, window=Houston)
+  
+  #Estimando a funcao G
+  #Gest - estima a funcao de distribuicao G de um padrao de pontos
+  Houston_day.G <- Gest(Houstonppp)
+  #Fest - estima a funcao de distribuicao F de um padrao de pontos
+  #Estimando a funcao F
+  Houston_day.F <- Fest(Houstonppp)
+  i=1
+}
+
+```
+
+Tratando
+```{r}
+crimes_monday <- crimes %>% filter(day == 'monday')
+crimes_tuesday <- crimes %>% filter(day == 'tuesday')
+crimes_wednesday <- crimes %>% filter(day == 'wednesday')
+crimes_thursday <- crimes %>% filter(day == 'thursday')
+crimes_friday <- crimes %>% filter(day == 'friday')
+crimes_saturday <- crimes %>% filter(day == 'saturday')
+crimes_sunday <- crimes %>% filter(day == 'sunday')
+
+```
+
+Plotanco
+```{r}
+par(mfrow=c(2,4))
+qmplot(x = lon, y = lat, data = crimes,
+       colour = I('red'), size = I(1.5), darken = .3)
+
+```
+
