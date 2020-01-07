@@ -37,9 +37,9 @@ library(devtools)
 #-------------------------------------------------------------------------------------#
 # ------------------------- Analise de padrao de pontos  -----------------------------#
 #-------------------------------------------------------------------------------------#
-
+setwd("/home/rennis/rennisHD00/Projetos/Pessoal/R/rennis-fgv-bigdata/estatistica-espacial-aplicacoes")
 #Importem o arquivo com as localizações dos de roubo em Sao Paulo
-roubosSP =
+roubosSP = read_csv2("dataset/baseroubos.csv")
   
   #Visualizando os dados de roubo
   roubosSP
@@ -49,11 +49,11 @@ roubosSP =
 #-------------------------------------------------------------------------------------#
 
 #Importando o shapefile de Sao Paulo
-SP =
+SP = readOGR("map/distritoSP/DEINFO_DISTRITO.shp")
   
   #Plotando o shapefile
   par(mar=c(2.5,2.5,1.5,0.5))
-plot(SP, axes = TRUE)
+  plot(SP, axes = TRUE)
 
 #Definindo o shapefile como uma janela onde os pontos serao plotados
 #owin - observation window
@@ -90,16 +90,16 @@ graf = qmplot(x = LONGITUDE,
 graf
 
 #Como fazer para obtermos uma visualizacao do padrao de pontos para cada mes
-
+graf + facet_wrap(~MES)
 
 #-------------------------------------------------------------------------------------#
 # ------------------------------ Efeito de 1a ordem  ---------------------------------#
 #-------------------------------------------------------------------------------------#
 
 #Estimando o efeito de primeira ordem (intensidade) usando diferentes kernels e diferentes raios
-SPkde.q = density.ppp(x = SPppp, sigma=0.002, kernel="quartic")
-SPkde.g = density.ppp(x = SPppp, sigma=0.02, kernel="gaussian")
-SPkde.e = density.ppp(x = SPppp, sigma=0.2, kernel="epanechnikov")
+SPkde.q = density.ppp(x = SPppp, sigma=2000, kernel="quartic")
+SPkde.g = density.ppp(x = SPppp, sigma=20000, kernel="gaussian")
+SPkde.e = density.ppp(x = SPppp, sigma=200000, kernel="epanechnikov")
 
 ##density.ppp - calcula a funcao de intensidade de acordo com o kernel escolhido
 #Argumentos:
@@ -120,13 +120,13 @@ par(mfrow=c(1,1))
 # -------------------------------- Salvando graficos  --------------------------------#
 #-------------------------------------------------------------------------------------#
 
-pdf('densidade_roubos.pdf')
+pdf('pdf/densidade_roubos.pdf')
 plot(SPkde.g, main="Kernel Normal")
 dev.off()
 
 
 graf
-ggsave("roubos.pdf")
+ggsave("pdf/roubos.pdf")
 
 #-------------------------------------------------------------------------------------#
 # ------------------------------ Efeito de 2a ordem  ---------------------------------#
@@ -144,7 +144,7 @@ par(mar=c(2.5,2.5,1.5,0.5))
 plot(SP.G, main="Funcao G")
 
 #Realizando o teste de Clark-Evans para testar agregacao espacial
-clarkevans.test(SPppp, alternative = " ")
+clarkevans.test(SPppp, alterfffnative = " ")
 
 #Funcoes para estimar os envelopes da funcao G
 Genv = envelope(SPppp, fun = Gest, nsim = 20)
@@ -157,8 +157,11 @@ plot(Genv)
 
 #Para facilitar, vamos trabalhar somente com os dados do mes de marco e abril
 #Crie uma subbase somente com estes dados
-base = 
-  
+roubosSP
+
+base = select(filter(roubosSP, MES %in% c(3,4)),ANO,MES,LATITUDE,LONGITUDE) 
+base
+
   mapa_roubo_SP <- leaflet(base) %>%
   addTiles() %>%
   addMarkers(lng = ~LONGITUDE,
@@ -255,14 +258,14 @@ roubos_join <- st_join(roubos_sf, SP2, join=st_within)
 roubos_contagem <- count(as_tibble(roubos_join), DISTRITO)
 
 #Salvando os dados
-write_excel_csv2(roubos_contagem,"base roubos contagem.csv")
+write_excel_csv2(roubos_contagem,"dataset/resultado/base_roubos_contagem.csv")
 
 #-------------------------------------------------------------------------------------#
 # ---------------------------- Revisando Dados de Area  ------------------------------#
 #-------------------------------------------------------------------------------------#
 
 ## Lendo o shapefile com os bairros da cidade de Recife
-RJ =
+RJ = readOGR("map/RJ/municipiosrj.shp")
   
   ## Plotando o shapefile com todos os bairros da cidade de Recife
   par(mar = c(4,4,2,2))
@@ -270,8 +273,7 @@ plot(RJ, axes = TRUE)
 
 #Lendo o arquivo de dados
 #Registro de casos de hanseniase
-base = 
-  
+base = read_csv2("dataset/hanseniase.csv")
   #Visualinado a base de dados
   base
 
@@ -299,7 +301,7 @@ class(RJ2)
 #Definindo o tipo do mapa como estatico
 tmap_mode("plot")
 
-#Construindo o mapa
+  #Construindo o mapa
 tm_shape(RJ2) + 
   tm_fill(col = "Casos",
           palette = "Greens",
@@ -459,7 +461,7 @@ head(moranlocREC)
 #-------------------------------------------------------------------------------------#
 
 ## Lendo o shapefile com os municipios de Sao Paulo
-sp = readOGR("35UFE250GC_SIR.shp")
+sp = readOGR("map/SP/35UFE250GC_SIR.shp")
 
 ## Plotando o shapefile com os municipios
 plot(sp)
@@ -475,7 +477,7 @@ ggplot() +
 
 # Lendo a base de dados 
 # A base contem o nome da estacao, suas coordenadas, altitude e temperatura no momento
-estacao = read_csv2('estacao_met.csv', locale = locale(encoding = "ISO-8859-1"))
+estacao = read_csv2('dataset/estacao_met.csv', locale = locale(encoding = "ISO-8859-1"))
 
 # O procedimento para criar um mapa com essas estacoes e similar ao de criar um 
 # mapa de padrao de pontos. Mas como adicionar a medida de interesse ao mapa?
@@ -510,7 +512,7 @@ ggplot()+
 
 #Lendo o arquivo de dados
 #Registro das vendas vendas do produto de interesse
-base = read_csv("base_zinco.csv")
+base = read_csv("dataset/base_zinco.csv")
 
 #Visualinado a base de dados
 base
@@ -641,7 +643,7 @@ grid.arrange(
   plot(vari, vari.exp.ajus, main = "Mattern"),ncol=2)
 
 # Carregando grade para interpolação
-zinco.grid = read_csv("grade_zinco.csv")
+zinco.grid = read_csv("dataset/grade_zinco.csv")
 
 #Transforma os dados espaciais como sendo em grade 
 gridded(zinco.grid) <- ~x+y
@@ -659,3 +661,4 @@ grid.arrange(
   spplot(kri.esf, "var1.pred", main = "Esferica"),spplot(kri.exp, "var1.pred", main = "Exponencial"),
   spplot(kri.gau, "var1.pred", main = "Gaussiana"),spplot(kri.mat, "var1.pred", main = "Matern"), ncol=2
 )
+
