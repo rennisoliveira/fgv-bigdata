@@ -15,18 +15,18 @@ library(raster)
 #-------------------------------------------------------------------------------------#
 # ------------------------ Importacao dos dados e do shape  --------------------------#
 #-------------------------------------------------------------------------------------#
-
+setwd("/home/rennis/rennisHD00/Projetos/Pessoal/R/rennis-fgv-bigdata/estatistica-espacial-aplicacoes")
 #Importando a base de dados de incendios da regiao de Castilla-La Mancha
-incendios = 
+incendios = read_csv2("dataset/incendios.csv") 
 
 #Importando o shapefile de Castilla-La Mancha
-Castilla <- 
+Castilla <- read_rds("map/Castilla/shape_castilla.rds") 
 
 #Definindo o shapefile como uma janela onde os pontos serao plotados - necessario para o uso do pacote spatstat
 CastillaO <- as.owin(Castilla)
 
 #Criando o padrao de pontos a ser plotado
-Castillappp = ppp(x = , y = , window = )
+Castillappp = ppp(x = incendios$x, y = incendios$y, window = CastillaO)
 
 ##ppp - cria um objeto da classe ppp
 #Argumentos:
@@ -48,7 +48,7 @@ plot(Castillappp, pch=21, cex=0.5, bg="red", main="Locias de focos de incendios 
 ## 2 - o valor do raio (usem o raio  = 7)
 ## 3 - a funcao kernel a ser utilizada - exemplo: "quartic", "gaussian", "disc", "epanechinikov" etc.
 
-Castillade = density.ppp(x = , sigma = , kernel = )
+Castillade = density.ppp(x = Castillappp, sigma = 7 , kernel = "quartic")
 
 #Plote o padrao de pontos e a funcao de intensidade estimada
 par(mfrow=c(1,2))
@@ -62,7 +62,7 @@ par(mfrow=c(1,1))
 ## argumentos que precisam ser definidos
 ## 1 - o objeto ppp a ser usado
 
-F.estimado = Fest(X = )
+F.estimado = Fest(X = Castillappp)
 
 #Plotandl a funcao F
 par(mar = c(3,3,1.5,.5))
@@ -74,10 +74,10 @@ plot(F.estimado)
 ## 1 - o objeto ppp a ser usado
 ## 2 - a hipotese alternativa do teste que deseja realizar (faca o teste H0: o padrao e CSR x H1: o padrao de pontos e de agrupamento)
 
-clarkevans.test(X = , alternative = " ")
+clarkevans.test(X = Castillappp, alternative = "clustered")
 
-#Conclusao???
-
+#Conclusao: Acima e Repulsivo abaixo e agrupado (Referencia F poisson)
+# No exemplo é agrupamento
 
 #-------------------------------------------------------------------------------------#
 # -------------------- Ajustando o processo de Poisson homogeneo   -------------------#
