@@ -92,7 +92,7 @@ ajuste1 = ppm(Q = Castillappp ~ 1)
 
 #Visualizando o modelo ajustado
 ajuste1
-
+ 
 #Numero de pontos observados
 Castillappp$n
 
