@@ -159,7 +159,7 @@ ajuste3
 #--------------------------#
 
 #Importando a imagem da elevacao
-elevacao = raster(x = "Elevacao.img")
+elevacao = raster(x = "imagem/Elevacao.img")
 
 ##raster - importa uma imagem
 #Argumentos:
@@ -180,14 +180,10 @@ ajuste4 = ppm(Q = Castillappp ~ x + y + elevacaoIM)
 
 ajuste4
 
-#---------------------------------------#
-#  Obtendo intervalo de confianca       #
-#---------------------------------------#
+#Intervalo de confianca de 95%
 confint(ajuste4, level = 0.95)
 
-#---------------------------------------#
-#  Verificando multicolineariedade      #
-#---------------------------------------#
+#Verificando multicolineariedade
 co = vcov(ajuste4, what="corr")
 round(co, 2)
 
@@ -195,7 +191,7 @@ round(co, 2)
 ajuste4_2 = update(ajuste4, . ~ I(x-210) + I(y-200))
 ajuste4_2
 
-
+#Verificando multicolineariedade
 co2 = vcov(ajuste4_2, what="corr")
 round(co2, 2)
 
@@ -270,15 +266,55 @@ ajuste6 = ppm(Castillappp.mark ~ marks + elevacaoIM)
 ajuste6
 
 #Plotando a funcao de intensidade do modelo ajustado
+par(mfrow = c(2,2))
 par(mar=c(1.5,1.5,1.5,1))
-plot(ajuste5, how = "image", se = FALSE, pause = FALSE, axes = TRUE)
+plot(ajuste6, how = "image", se = FALSE, pause = FALSE, axes = TRUE)
 
 #-------------------------------------------------------------------------------------#
 # --------------------------- Regressao logistica Espacial ---------------------------#
 #-------------------------------------------------------------------------------------#
 
-fit.model = slrm(Castillappp ~ x + y + elevacaoIM, eps = 1)
-fit.model
+#Ajustando o modelo
+fit.model1 = slrm(Castillappp ~ x + y + elevacaoIM, eps = 7, link="logit")
 
-confint(fit.model)
+#Dados
+fit.model$Data
+
+#Intervalo de confianca para os parametros do modelo
+confint(fit.model1)
+
+#Calculando as probabilidades ajustadas
+prob.ajust1 = fitted.slrm(fit.model1)
+
+#Plotando as probabilidades ajustadas
+plot(prob.ajust1)
+
+#Ajustando o modelo
+fit.model2 = slrm(Castillappp ~ x + y + elevacaoIM, eps = 7, link="cloglog")
+
+#Intervalo de confianca para os parametros do modelo
+confint(fit.model2)
+
+#Calculando as probabilidades ajustadas
+prob.ajust2 = fitted.slrm(fit.model2)
+
+#Plotando as probabilidades ajustadas
+plot(prob.ajust2)
+
+#Comparando os dois modelos pelo AIC
+AIC(fit.model1)
+AIC(fit.model2)
+
+library(plotROC)
+
+#Criando uma base com os dados e as probabilidades
+ajuste.log = tibble(y = fit.model1$Data$df$Castillappp, prob.est = c(prob.ajust1$v))
+
+#Criando uma curva ROC
+rocplot <- ggplot(ajuste.log, aes(m = prob.est, d = y)) + 
+  geom_roc(n.cuts=20,labels=FALSE)
+
+rocplot + 
+  style_roc(theme = theme_grey) + 
+  geom_rocci(fill="pink")
 
