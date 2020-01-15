@@ -45,16 +45,18 @@ tmap_mode("plot")
 #Construindo o mapa para a proporcao
 tm_shape(NY2) + 
   tm_fill(col = "PROPCAS",
-          palette = "seq",
+          palette = "RdYlGn",
           breaks = quantile(NY$PROPCAS),
-          title = "Teste seq")
+          title = "Proporção Transformada")
 
 
 #Construindo o mapa para Z
 tm_shape(NY2) + 
-  tm_fill(col = "PROPCAS",
-          palette = "div",
-          title = "Teste cat")
+  tm_fill(col = "Z",
+          breaks = quantile(NY2$Z, propbs = seq(0,1,0.125)),
+          palette = "Reds",
+          title = "Variavel Z",
+          midpoint = NA)
 
 #Avaliando autocorrelacao entre as variaveis explicativas e a variavel resposta
 dad = tibble(Z = NY2$Z, PEXPOSURE = NY2$PEXPOSURE, PCTAGE65P = NY2$PCTAGE65P, PCTOWNHOME = NY2$PCTOWNHOME)
@@ -73,16 +75,16 @@ W.queen
 #pl - um objeto da classe SpatialPolygons
 #row.names - um vetor indicando os rotulos das sub-regioes
 #queen - se TRUE, cria o criterio queen
+W.Queen.pesoW <- nb2listw(neighbours = W.queen , style="W") #outras opcoes: B, C, S e U
+W.Queen.pesoW
 
-## Lista de vizinhanca espacial com pesos
-W.Queen.pesoB <- nb2listw(neighbours = W.queen , style="B") #outras opcoes: B, C, S e U
-W.Queen.pesoB
 #-------------------------------------------------------------------------------------#
 # ----------- Criando a matriz W baseado no criterio QUENN com peso binário ----------#
 #-------------------------------------------------------------------------------------#
 
 ## Lista de vizinhanca espacial com pesos
-W.Queen.pesoB <- nb2listw(neighbours = , style=" ") #outras opcoes: B, C, S e U
+W.Queen.pesoB <- nb2listw(neighbours = W.queen, style="B") #outras opcoes: B, C, S e U
+W.Queen.pesoB
 
 #-------------------------------------------------------------------------------------#
 # Criando a matriz W com 3 vizinhos para cada regiao e com peso padronizado por linha #
@@ -107,7 +109,8 @@ W.3viz = knn2nb(knn = k3viz)
 #knn - um objeto retornado por knearneigh
 
 ## Lista de vizinhanca espacial com pesos
-W.3viz.pesoW<- nb2listw(neighbours =  , style=" ") #outras opcoes: B, C, S e U
+W.3viz.pesoW<- nb2listw(neighbours =W.3viz  , style="W") #outras opcoes: B, C, S e U
+W.3viz.peso<- nb2listw(neighbours =W.3viz  , style="B") #outras opcoes: B, C, S e U
 
 
 #-------------------------------------------------------------------------------------#
@@ -118,7 +121,10 @@ W.3viz.pesoW<- nb2listw(neighbours =  , style=" ") #outras opcoes: B, C, S e U
 # 1 - e preciso especificar a variavel de interesse
 # 2 - e preciso especificar uma lista de vizinhanca (W comm os pesos definidos)
 
-moran.test(x = , listw = )
+moran.test(x = NY$PROPCAS, listw = W.Queen.pesoW)
+moran.test(x = NY$PROPCAS, listw = W.Queen.pesoB)
+moran.test(x = NY$PROPCAS, listw = W.3viz.pesoW)
+moran.test(x = NY$PROPCAS, listw = W.3viz.pesoB)
 
 ## moran.test - calcula o indice global de moran
 #Argumentos:
@@ -255,3 +261,4 @@ AIC(ajusteSAR.3VW)
 #Criterio Queen e Peso W
 ajusteCAR.QW = spautolm(formula = Z ~ PEXPOSURE + PCTAGE65P + PCTOWNHOME, data = NY@data, listw = W.Queen.pesoW, family = "CAR")
 summary(ajusteSAR.QW)
+
