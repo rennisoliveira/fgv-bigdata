@@ -13,14 +13,14 @@ library(RColorBrewer)
 base = read_csv2("dataset/base_zinco-v2.csv")
 
 #Visualinado a base de dados
-base
+head(base)
 
 #-------------------------------------------------------------------------------------#
 # ------------------ Mapas : valor do Zinco nos locais mensurados  -------------------#
 #-------------------------------------------------------------------------------------#
 
 #Plotando a variavel de interesse nos pontos observados com uma escala de cores
-base %>% ggplot(aes(x = , y = )) + 
+base %>% ggplot(aes(x = base$lat, y = base$long)) + 
   geom_point(aes(color = ))
 
 
