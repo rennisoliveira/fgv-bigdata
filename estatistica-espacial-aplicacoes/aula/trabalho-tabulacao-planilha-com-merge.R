@@ -63,15 +63,40 @@ rm(municipio_atual)
 rm(municipio_referencia)
 rm(sexo_atual)
 rm(sexo_referencia)
+rm(df_municipio)
+rm(df_sexo)
 
 head(df_tabela3175)
 # save(df_tabela3175,file="dataset/df_tabela3175.Rda")
 load("dataset/df_tabela3175.Rda")
+)
 head(df_tabela3175)
-
-df_tabela3175 %>%
+# Separa Municipio e UF
+df_tabela3175 = df_tabela3175 %>%
   separate(municipio, c("municipio", "uf"), " \\(", extra = "merge")
 
-df <- data.frame(x = c("x (dsds", "y (dsdxx"))
-df = df %>% separate(x, c("key", "value"), " (", extra = "merge")
-df$value
+# Remove caracter da UF
+df_tabela3175$uf = gsub(")", "", df_tabela3175$uf)
+
+# Remove a linha nula
+df_tabela3175 = na.omit(df_tabela3175)
+
+
+df_tabela3175 %>% 
+  select(  municipio, uf, sexo, faixa_etaria, branco_urbano, branco_rural, negro_urbano, negro_rural
+           , amarelo_urbano, amarelo_rural, pardo_urbano, pardo_rural, indigena_urbano, indigena_rural
+           , nao_declarado_urbano, nao_declarado_rural)
+          mutate(branco_urbano = case_when(branco_urbano == '-' ~ '0', TRUE  ~ branco_urbano)) %>%
+          mutate(branco_rural = case_when(branco_rural == '-' ~ '0', TRUE  ~ branco_rural)) %>%
+          mutate(negro_urbano = case_when(negro_urbano == '-' ~ '0', TRUE  ~ negro_urbano)) %>%
+          mutate(negro_rural = case_when(negro_rural == '-' ~ '0', TRUE  ~ negro_rural)) %>%
+          mutate(amarelo_urbano = case_when(amarelo_urbano == '-' ~ '0', TRUE  ~ amarelo_urbano)) %>%
+          mutate(amarelo_rural = ifelse(amarelo_rural == "-",0,amarelo_rural)) %>%
+          mutate(pardo_urbano = case_when(pardo_urbano == '-' ~ '0', TRUE  ~ pardo_urbano)) %>%
+          mutate(pardo_rural = case_when(pardo_rural == '-' ~ '0', TRUE  ~ pardo_rural)) %>%
+          mutate(indigena_urbano = case_when(indigena_urbano == '-' ~ '0', TRUE  ~ indigena_urbano)) %>%
+          mutate(indigena_rural = case_when(indigena_rural == '-' ~ '0', TRUE  ~ indigena_rural)) %>%
+          mutate(nao_declarado_urbano = case_when(nao_declarado_urbano == '-' ~ '0', TRUE  ~ nao_declarado_urbano)) %>%
+          mutate(nao_declarado_rural = case_when(nao_declarado_rural == '-' ~ '0', TRUE  ~ nao_declarado_rural))
+
+save(df_tabela3175,file="dataset/df_tabela3175v2.Rda")
