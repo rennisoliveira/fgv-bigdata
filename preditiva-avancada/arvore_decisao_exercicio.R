@@ -12,25 +12,23 @@ setwd("/home/rennis/rennisHD00/Projetos/Pessoal/R/rennis-fgv-bigdata/preditiva-a
 library(caret)
 library(mlbench)
 
-# 1) Treine 3 árvores de decisão (Boosting, Bagging e Random Forest) e calcule suas 
-# respectivas matrizes de confusão
-# Obs) Utilize seed(9283) para partição dos dados e treino dos modelos
+# Carga Dataset
 df <- read.csv(file="dataset/BostonHospital_Exercise.csv", header=TRUE, sep=",", encoding = 'utf-8')
 
+# 1) Treine 3 árvores de decisão (Boosting, Bagging e Random Forest) e matrizes de confusão
+# Obs) Utilize seed(9283) para partição dos dados e treino dos modelos
 set.seed(9283)
+# Cria uma array aleatorio
 trainIndex <- createDataPartition(df$Categoria, p = .7, list = FALSE)
-
+# Filtra array
 dfTrain <- df[ trainIndex,]
 dfTest  <- df[-trainIndex,]
-
-
 
 set.seed(9283)
 cv <- trainControl(method = "repeatedcv", number = 10, savePredictions = TRUE, classProbs=TRUE)
 model_bagging <- train(Categoria~. , data = dfTrain, method = "treebag",trControl = cv)
 pred_bagging <- predict(model_bagging ,newdata=dfTest)
 confusionMatrix(data=pred_bagging, dfTest$Categoria)
-
 
 set.seed(9283)
 model_boosting <- train(Categoria~. , data = dfTrain, method = "xgbTree",trControl = cv)
@@ -50,7 +48,6 @@ imp_boosting
 
 imp_rf <- varImp(model_rf, useModel=FALSE, scale=FALSE)
 imp_rf
-
 
 # 3) Para cada modelo determine o tipo de patologia para o seguinte indivíduo
 patient <- data.frame("Q1"="Dor de Cabeça" , "Q2"="Paralisisa" , "Q3"="Problema Auditivo em Parente" , 
